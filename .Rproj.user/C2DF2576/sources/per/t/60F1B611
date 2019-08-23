@@ -1,0 +1,22 @@
+{
+    "collab_server" : "",
+    "contents" : "",
+    "created" : 1566574472532.000,
+    "dirty" : false,
+    "encoding" : "UTF-8",
+    "folds" : "",
+    "hash" : "1873278071",
+    "id" : "60F1B611",
+    "lastKnownWriteTime" : 1566584237,
+    "last_content_update" : 1566584237245,
+    "path" : "~/GitHub/Data-Mining-Project-2019/textminingproject.R",
+    "project_path" : "textminingproject.R",
+    "properties" : {
+        "cursorPosition" : "53,27",
+        "scrollLine" : "48"
+    },
+    "relative_order" : 1,
+    "source_on_save" : false,
+    "source_window" : "",
+    "type" : "r_source"
+}
