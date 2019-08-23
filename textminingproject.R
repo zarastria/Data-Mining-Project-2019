@@ -305,7 +305,7 @@ book_tfidf %>%
 # between words, whether examining which words tend to follow others immediately, or that tend to 
 # co-occur within the same documents.
 
-## Build a bigram
+## Build a bigram to find the most famous streets in Jane Austen's corpus
 
 austen_bigrams <- austen_books() %>%
   unnest_tokens(bigram, text, token = "ngrams", n = 2)
@@ -316,7 +316,6 @@ austen_bigrams %>%
   count(bigram, sort = TRUE)
 
 # filter out stop words and perform another count
-
 bigrams_separated <- austen_bigrams %>%
   separate(bigram, c("word1", "word2"), sep = " ")
 
@@ -324,18 +323,18 @@ bigrams_filtered <- bigrams_separated %>%
   filter(!word1 %in% stop_words$word) %>%
   filter(!word2 %in% stop_words$word)
 
+# Perform a count
 bigram_counts <- bigrams_filtered %>%
   count(word1, word2, sort = TRUE)
 
 bigram_counts
 
-# Ex. most common "streets" in each book
-
+# most common "streets" in each book
 bigrams_filtered %>%
   filter(word2 == "street") %>%
   count(book, word1, sort = TRUE)
 
-# Sex perceptions in Emma
+## Sex perceptions in Emma
 #emma_bigram <- austen_bigrams %>%
 #  filter(book == "Emma") 
 
@@ -374,10 +373,42 @@ gender_combine <- inner_join(austen_she, austen_he) %>%
   mutate(verb_ratio = she_n / he_n) %>%
   arrange(desc(verb_ratio))
 
-view(gender_combine)
+# combine the top 15 and the lower 15 gendered verbs into a single dataframe
+gender_perception <- rbind(head(gender_combine, 15), tail(gender_combine, 15))
 
-head(gender_combine, 15)
-tail(gender_combine, 15)
+view(gender_perception)
+
+cut_off = 1
+tidy_gender <- gender_combine %>%
+  filter(verb_ratio >= 3.5 | verb_ratio <= 0.6) %>%
+  mutate(verb_ratio = verb_ratio - 1) %>%
+  mutate(sign = )
+
+ggplot(aes(fct_reorder(word, verb_ratio), verb_ratio)) +
+  geom_col(show.legend =FALSE) +
+  coord_flip()
+
+
+
+book_tfidf %>%
+  group_by(title) %>%
+  top_n(10) %>%
+  ungroup %>%
+  ggplot(aes(fct_reorder(word, tf_idf),
+             tf_idf, 
+             fill = title)) +
+  geom_col(show.legend = FALSE) +
+  coord_flip() +
+  facet_wrap(~title, scales = "free")
+
+
+
+
+
+
+
+
+
 
 
 

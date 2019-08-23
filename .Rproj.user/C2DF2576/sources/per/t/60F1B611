@@ -5,15 +5,15 @@
     "dirty" : false,
     "encoding" : "UTF-8",
     "folds" : "",
-    "hash" : "1873278071",
+    "hash" : "2897482723",
     "id" : "60F1B611",
-    "lastKnownWriteTime" : 1566584237,
-    "last_content_update" : 1566584237245,
+    "lastKnownWriteTime" : 1566588516,
+    "last_content_update" : 1566588516217,
     "path" : "~/GitHub/Data-Mining-Project-2019/textminingproject.R",
     "project_path" : "textminingproject.R",
     "properties" : {
-        "cursorPosition" : "53,27",
-        "scrollLine" : "48"
+        "cursorPosition" : "391,0",
+        "scrollLine" : "367"
     },
     "relative_order" : 1,
     "source_on_save" : false,
