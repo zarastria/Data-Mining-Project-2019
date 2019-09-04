@@ -268,43 +268,6 @@ book_tfidf %>%
   facet_wrap(~title, scales = "free")
 
 
-## We could build a wordcloud
-#install.packages("wordcloud")
-#install.packages("reshape2")
-#library(wordcloud)
-#library(reshape2)
-#
-#tidy_books %>%
-#  anti_join(stop_words) %>%
-#  count(word) %>%
-#  with(wordcloud(word, n, max.words = 100))
-#
-# Or a fancier wordcloud
-#
-#tidy_books %>%
-#  inner_join(get_sentiments("bing")) %>%
-#  count(word, sentiment, sort = TRUE) %>%
-#  acast(word ~ sentiment, value.var = "n", fill = 0) %>%
-#  comparison.cloud(colors = c("red", "blue"), max.words = 100)
-
-## Looking at units beyond words
-# Lots of useful work can be done by tokenizing at the word level, but sometimes it is useful or 
-# necessary to look at different units of text. For example, some sentiment analysis algorithms look
-# beyond only unigrams (i.e. single words) to try to understand the sentiment of a sentence as a 
-# whole. These algorithms try to understand that
-
-# "I am not having a good day."
-
-# is a sad sentence, not a happy one, because of negation. R packages included coreNLP (T. Arnold 
-# and Tilton 2016), cleanNLP (T. B. Arnold 2016), and sentimentr (Rinker 2017) are examples of such
-# sentiment analysis algorithms. For these, we may want to tokenize text into sentences, and it 
-# makes sense to use a new name for the output column in such a case.
-
-# So far we’ve considered words as individual units, and considered their relationships to 
-# sentiments or to documents. However, many interesting text analyses are based on the relationships
-# between words, whether examining which words tend to follow others immediately, or that tend to 
-# co-occur within the same documents.
-
 ## Build a bigram to find the most famous streets in Jane Austen's corpus
 
 austen_bigrams <- austen_books() %>%
@@ -334,9 +297,7 @@ bigrams_filtered %>%
   filter(word2 == "street") %>%
   count(book, word1, sort = TRUE)
 
-## Sex perceptions in Emma
-#emma_bigram <- austen_bigrams %>%
-#  filter(book == "Emma") 
+## Sex perceptions in Jane Austen's Corpus
 
 austen_bigrams %>%
   count(bigram, sort = TRUE)
@@ -368,25 +329,112 @@ austen_he <- austen_separated %>%
 
 view(austen_he)
 
+# Computes log2 ratios, better computation but thinking in logs is less intuitive
+#gender_combine <- inner_join(austen_she, austen_he) %>%
+#  anti_join(stop_words)  %>%
+#  mutate(verb_ratio = log2(she_n / he_n)) %>%
+#  arrange(desc(verb_ratio))
+
+# computes using ratios, works but feels hinky
 gender_combine <- inner_join(austen_she, austen_he) %>%
   anti_join(stop_words)  %>%
-  mutate(verb_ratio = she_n / he_n) %>%
+  mutate(verb_ratio_she = she_n / he_n, verb_ratio_he = -1*(he_n / she_n)) %>%
+  mutate(verb_ratio_she = replace(verb_ratio_she, verb_ratio_she < 1, 0)) %>%
+  mutate(verb_ratio_he = replace(verb_ratio_he, verb_ratio_he > -1, 0)) %>%
+  mutate(verb_ratio = verb_ratio_she + verb_ratio_he) %>%
   arrange(desc(verb_ratio))
+
+view(gender_combine)
 
 # combine the top 15 and the lower 15 gendered verbs into a single dataframe
 gender_perception <- rbind(head(gender_combine, 15), tail(gender_combine, 15))
 
 view(gender_perception)
 
-cut_off = 1
-tidy_gender <- gender_combine %>%
-  filter(verb_ratio >= 3.5 | verb_ratio <= 0.6) %>%
-  mutate(verb_ratio = verb_ratio - 1) %>%
-  mutate(sign = )
+gender_perception %>%
+  ggplot(aes(fct_reorder(word, verb_ratio), verb_ratio)) +
+    geom_col(show.legend =FALSE) +
+    coord_flip()
 
-ggplot(aes(fct_reorder(word, verb_ratio), verb_ratio)) +
+## Sex perceptions in Charles Dickens' Corpus
+
+charles_dickens_collection <- gutenberg_download(c(1400, 98, 1023, 24022, 766, 730),
+                                                 meta_fields = "title")
+charles_dickens_collection %>% count(title)
+
+# Tidy the corpus
+dickens_bigrams <- charles_dickens_collection %>%
+  group_by(title) %>%
+  mutate(linenumber = row_number(), 
+         chapter = cumsum(str_detect(text, regex("^chapter [\\divxlc]", ignore_case = TRUE)))) %>%
+  ungroup() %>%
+  unnest_tokens(bigram, text, token = "ngrams", n = 2) %>%
+  select(-gutenberg_id, -linenumber, -chapter)%>%
+  rename(book = title)
+
+dickens_bigrams %>%
+  count(bigram, sort = TRUE)
+
+dickens_separated <- dickens_bigrams %>%
+  separate(bigram, c("word1", "word2"), sep = " ")
+
+dickens_she <- dickens_separated %>%
+  filter(word1 == "she") %>%
+  count(book, word2) %>%
+  rename(word = word2, she_n = n) %>%
+  select(-book) %>%
+  group_by(word) %>%
+  summarize(she_n = sum(she_n)) %>%
+  filter(she_n > 1) %>%
+  arrange(desc(she_n))
+
+view(dickens_she)
+
+dickens_he <- dickens_separated %>%
+  filter(word1 == "he") %>%
+  count(book, word2) %>%
+  rename(word = word2, he_n = n) %>%
+  select(-book) %>%
+  group_by(word) %>%
+  summarize(he_n = sum(he_n)) %>%
+  filter(he_n > 1) %>%
+  arrange(desc(he_n))
+
+view(dickens_he)
+
+# Computes log2 ratios, better computation but thinking in logs is less intuitive
+#gender_combine <- inner_join(austen_she, austen_he) %>%
+#  anti_join(stop_words)  %>%
+#  mutate(verb_ratio = log2(she_n / he_n)) %>%
+#  arrange(desc(verb_ratio))
+
+# computes using ratios, works but feels hinky
+gender_combine <- inner_join(dickens_she, dickens_he) %>%
+  anti_join(stop_words)  %>%
+  mutate(verb_ratio_she = she_n / he_n, verb_ratio_he = -1*(he_n / she_n)) %>%
+  mutate(verb_ratio_she = replace(verb_ratio_she, verb_ratio_she < 1, 0)) %>%
+  mutate(verb_ratio_he = replace(verb_ratio_he, verb_ratio_he > -1, 0)) %>%
+  mutate(verb_ratio = verb_ratio_she + verb_ratio_he) %>%
+  arrange(desc(verb_ratio))
+
+view(gender_combine)
+
+# combine the top 15 and the lower 15 gendered verbs into a single dataframe
+gender_perception <- rbind(head(gender_combine, 15), tail(gender_combine, 15))
+
+view(gender_perception)
+
+gender_perception %>%
+  ggplot(aes(fct_reorder(word, verb_ratio), verb_ratio)) +
   geom_col(show.legend =FALSE) +
   coord_flip()
+
+
+
+
+
+
+
 
 
 
