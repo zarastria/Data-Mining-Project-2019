@@ -435,38 +435,6 @@ gender_perception %>%
 
 
 
-
-
-
-book_tfidf %>%
-  group_by(title) %>%
-  top_n(10) %>%
-  ungroup %>%
-  ggplot(aes(fct_reorder(word, tf_idf),
-             tf_idf, 
-             fill = title)) +
-  geom_col(show.legend = FALSE) +
-  coord_flip() +
-  facet_wrap(~title, scales = "free")
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 ### Topic Modeling ###
 # Topic modeling is unsupervised macine learning
 # we have a pile of documents in front of us, and we believe that there are latent topics of 
@@ -476,27 +444,37 @@ book_tfidf %>%
 ###
 
 ## Load Libraries
+library(tidyverse)
+library(tidytext)
+library(ggplot2)
+library(gutenbergr)
 library(stm)
 library(glmnet)
 library(yardstick)
 library(broom)
 
 
-
-
 ## We want to tear apart and put the books back togethor using an unsupervised Machine Learning
 ## Algorithm.
 
 ## load titles by name, rather than ID number.
-titles <- c("Twenty Thousand Leagues under the Sea", 
-            "The War of the Worlds",
-            "Pride and Prejudice", 
-            "Great Expectations")
+#titles <- c("A Tale of Two Cities", 
+#            "The War of the Worlds",
+#            "Alice's Adventures in Wonderland", 
+#            "Great Expectations")
+#The Picture of Dorian Gray
+
+titles <- c("Emma", 
+            "The Hound of the Baskervilles",
+            "Alice's Adventures in Wonderland", 
+            "The War of the Worlds")
 
 books <- gutenberg_works(title %in% titles) %>%
   gutenberg_download(meta_fields = "title")
 
+
 books
+unique(books$title)
 
 # I've TORN THE BOOKS APART!!!
 
@@ -520,7 +498,7 @@ word_counts <- by_chapter %>%
   count(document, word, sort = TRUE) %>%
   group_by(word) %>%
   filter(n() > 10) %>%
-  ungroup
+  ungroup()
 
 word_counts
 
@@ -552,12 +530,12 @@ chapter_topics
 
 top_terms <- chapter_topics %>%
   group_by(topic) %>%
-  top_n(10, beta) %>%
+  top_n(15, beta) %>%
   ungroup() %>%
   arrange(topic, -beta)
 
-top_terms
-view(top_terms)
+#top_terms
+#view(top_terms)
 
 # Let's build a visualization.
 
@@ -574,7 +552,7 @@ top_terms %>%
 chapters_gamma <- tidy(topic_model, matrix = "gamma",
                        document_names = rownames(words_sparse))
 
-chapters_gamma
+unique(chapters_gamma$document)
 
 ## How well did we do in putting our books back together into the 4 topics?
 
@@ -592,65 +570,4 @@ chapters_parsed %>%
   ggplot(aes(factor(topic), gamma)) +
   geom_boxplot() +
   facet_wrap(~ title)
-
-### Text Classification - Save for another time ###
-# This is supervised machine learning
-###
-
-## Build a dataset for modeling
-
-# Let's get two texts and build a model to distinguish between them. For this example, I chose "The
-# War of the Worlds" and "A Princess of Mars"
-
-titles <- c("The War of the Worlds",
-            "A Princess of Mars")
-
-books <- gutenberg_works(title %in% titles) %>%
-  gutenberg_download(meta_fields = "title") %>%
-  mutate(document = row_number())
-
-books %>% count(title)
-
-## By making the `document` column and using that as our modeling unit, we are splitting each book 
-## up until its individual lines, as given to us by Project Gutenberg. Next, let's make a tidy, 
-## tokenized dataset.
-
-tidy_books <- books %>%
-  unnest_tokens(word, text) %>%
-  group_by(word) %>%
-  filter(n() > 10) %>%
-  ungroup
-
-tidy_books
-
-# And build:
-#   - a sparse matrix with the features to use in modeling
-#   - a dataframe with the **response** variable (i.e. title)
-
-sparse_words <- tidy_books %>%
-  count(document, word, sort = TRUE) %>%
-  cast_sparse(document, word, n)
-
-books_joined <- tibble(document = as.integer(rownames(sparse_words))) %>%
-  left_join(books %>%
-              select(document, title))
-
-## Train a regularized regression model
-
-is_mars <- books_joined$title == "A Princess of Mars"
-model <- cv.glmnet(sparse_words, is_mars, 
-                   family = "binomial", 
-                   keep = TRUE)
-
-# You can also check out the built-in `plot(model)` results from glmnet.
-
-## Understand and evaluate the model, how does the glmnet model classify each document?
-
-
-
-
-
-
-
-
 

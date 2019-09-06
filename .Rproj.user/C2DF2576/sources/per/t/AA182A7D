@@ -1,0 +1,22 @@
+{
+    "collab_server" : "",
+    "contents" : "",
+    "created" : 1567694013399.000,
+    "dirty" : false,
+    "encoding" : "UTF-8",
+    "folds" : "",
+    "hash" : "255088836",
+    "id" : "AA182A7D",
+    "lastKnownWriteTime" : 1565794584,
+    "last_content_update" : 1565794584,
+    "path" : "~/GitHub/Data-Mining-Project-2019/Text_Modeling_Basics.R",
+    "project_path" : "Text_Modeling_Basics.R",
+    "properties" : {
+        "cursorPosition" : "0,0",
+        "scrollLine" : "0"
+    },
+    "relative_order" : 4,
+    "source_on_save" : false,
+    "source_window" : "",
+    "type" : "r_source"
+}
