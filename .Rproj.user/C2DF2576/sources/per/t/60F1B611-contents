@@ -37,11 +37,13 @@ text <- c("If you can dream – and not make dreams your master;",
           "And stoop and build ’em up with worn-out tools:")
 text
 
+
 # Put text in a data frame, one line per row
 text_df <- data_frame(line = 1:8, text = text)
 text_df
 
-# what we want is one word per row. unnest_tokens breaks out words
+
+# We want one word per row. The unnest_tokens function breaks out words
 text_df %>%
   unnest_tokens(word, text)
 
@@ -119,7 +121,11 @@ tidy_books <- austen_books() %>%
 #  geom_histogram(show.legend = FALSE) +
 #  xlim(NA, 0.0009) +
 #  facet_wrap(~book, ncol = 2, scales = "free_y")
-#  
+
+
+## Code that finds colors with the given number of graphs!!
+#library(scales)
+#show_col(hue_pal()(4))
 
 ## build a word count using the "joy" sentiment
 nrc_joy <- get_sentiments("nrc") %>%
@@ -128,7 +134,27 @@ nrc_joy <- get_sentiments("nrc") %>%
 tidy_books %>%
   filter(book == "Emma") %>%
   inner_join(nrc_joy) %>%
-  count(word, sort = TRUE)
+  count(word, sort = TRUE) %>%
+  top_n(10) %>%
+  ggplot(aes(fct_reorder(word, n), n)) +
+  geom_col(fill = "#00BFC4") +
+  expand_limits(y = c(0,400)) +
+  coord_flip()
+
+## build a word count using the "trust" sentiment
+nrc_joy <- get_sentiments("nrc") %>%
+  filter(sentiment == "trust")
+
+tidy_books %>%
+  filter(book == "Emma") %>%
+  inner_join(nrc_joy) %>%
+  count(word, sort = TRUE) %>%
+  top_n(10) %>%
+  ggplot(aes(fct_reorder(word, n), n)) +
+  geom_col(fill = "#00BFC4") +
+  expand_limits(y = c(0,400)) +
+  coord_flip()
+
 
 ## Build a positive and negative word count for the book "Emma" 
 tidy_books %>%
@@ -140,6 +166,7 @@ tidy_books %>%
   ungroup %>%
   ggplot(aes(fct_reorder(word, n), n, fill = sentiment)) +
   geom_col() +
+  expand_limits(y = c(0,600)) +
   coord_flip() +
   facet_wrap(~ sentiment, scales = "free")
 
@@ -158,6 +185,7 @@ tidy_books %>%
   ungroup %>%
   ggplot(aes(fct_reorder(word, n), n, fill = sentiment)) +
   geom_col() +
+  expand_limits(y = c(0,400)) +
   coord_flip() +
   facet_wrap(~ sentiment, scales = "free")
 
@@ -464,14 +492,22 @@ library(broom)
 #            "Great Expectations")
 #The Picture of Dorian Gray
 
-titles <- c("Emma", 
-            "The Hound of the Baskervilles",
-            "Alice's Adventures in Wonderland", 
-            "The War of the Worlds")
+# Only books with chapter formatting work with this code. The following books work:
+# "The Adventures of Tom Sawyer"
+# "Great Expectations"
+# "The War of the Worlds"
+# "The Hound of the Baskervilles"
+
+titles <- c("Emma",                              # Jane Austen
+            "The Picture of Dorian Gray",        # Oscar Wilde
+            "Alice's Adventures in Wonderland",  # Lewis Carroll
+            "The War of the Worlds",             # H. G. Wells
+            "Jane Eyre: An Autobiography",       # Charlotte Bronte
+            "The Hound of the Baskervilles"      # Authur Conan Doyle
+)
 
 books <- gutenberg_works(title %in% titles) %>%
   gutenberg_download(meta_fields = "title")
-
 
 books
 unique(books$title)
@@ -488,6 +524,7 @@ by_chapter <- books %>%
   unite(document, title, chapter)
 
 by_chapter
+unique(by_chapter$document)
 
 # Let's use topic modeling to see if we can put books back together
 # As a first step, let's tokenize and tidy these chapters.
@@ -512,7 +549,7 @@ class(words_sparse)
 # Train a topic model: written in C++, main function is stm and is Silge's favorite package. STM is 
 # an unsupervised machine learning model. K identifies K topics within the corpus.
 
-topic_model <- stm(words_sparse, K = 4, 
+topic_model <- stm(words_sparse, K = 6, 
                    init.type = "Spectral")
 
 summary(topic_model)
@@ -524,7 +561,7 @@ summary(topic_model)
 
 chapter_topics <- tidy(topic_model, matrix = "beta")
 
-chapter_topics
+head(chapter_topics,18)
 
 # What are the highest probability words in each topic?
 
@@ -543,8 +580,9 @@ top_terms %>%
   mutate(term = fct_reorder(term, beta)) %>%
   ggplot(aes(term, beta, fill = factor(topic))) +
   geom_col(show.legend = FALSE) +
-  facet_wrap(~ topic, scales = "free") +
-  coord_flip()
+  coord_flip() +
+  facet_wrap(~ topic, scales = "free")
+
 
 # The document-topic probabilities are called "gamma". Looks at every document and assigns a 
 # probability that a given topic was generated from a specific document
