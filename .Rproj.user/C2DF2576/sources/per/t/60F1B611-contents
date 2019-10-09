@@ -47,6 +47,10 @@ text_df
 text_df %>%
   unnest_tokens(word, text)
 
+
+### Sentiment Analyses ###
+
+
 ## What are a texts most common words?
 # Load text. Use Les Miserables, by Victor Hugo - gutenberg library code 135
 full_text <- gutenberg_download(135)
@@ -81,8 +85,6 @@ tidy_book %>%
   ggplot(aes(fct_reorder(word, n), n)) +
   geom_col() +
   coord_flip()
-
-### Sentiment Analyses ###
 
 # Tidytext containts three general purpose sentiment lexicons - based on unigrams.
 get_sentiments("afinn")
